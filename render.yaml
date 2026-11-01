@@ -1,29 +1,29 @@
 # Render Blueprint: the website + API on Render (free), the data on Supabase (free Postgres).
-# New > Blueprint > pick this repo > Apply. Render asks for DATABASE_URL: paste Supabase's "Session pooler" URI
-# (Supabase > Connect > Session pooler, port 5432) with your database password in it.
-# Region: Singapore, the closest Render region to India. Create the Supabase project in Singapore too, so each
-# database round trip stays a few milliseconds.
-# (Prefer Render's own Postgres? Use render.render-postgres.yaml as the Blueprint Path.)
 services:
   - type: web
     name: scammap
     runtime: docker
     region: singapore
-    # "free" needs no payment. It sleeps after 15 minutes without requests and takes about a minute to wake, so keep it
-    # awake with a free uptime monitor on /health every 5 minutes (README, "Render"). For judging day you can switch the
-    # service to "starter" (US$7/month, always on) in the Render dashboard: Settings > Instance Type.
     plan: free
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        sync: false # Supabase > Connect > Session pooler URI
+        sync: false # Paste the Supabase Session pooler URI here
       - key: DB_SSL
         value: "true"
       - key: PEPPER
-        generateValue: true
+        sync: false # Paste your 64-character hex string here
       - key: LICENSE_ENFORCE
         value: "true"
       - key: TRUST_BODY_IP_PREFIX
         value: "true"
       - key: LICENSE_JSON
+        sync: false # Paste the JSON block here
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: VITE_MAPTILER_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: URLHAUS_AUTH_KEY
         sync: false
