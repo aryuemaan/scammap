@@ -5,9 +5,10 @@ services:
     name: scammap
     runtime: docker
     region: singapore
-    # Free instances sleep after 15 minutes idle and take about a minute to wake.
-    # Use "starter" for judging day, or keep "free" plus an uptime pinger on /health every 5 minutes.
-    plan: starter
+    # "free" needs no payment. It sleeps after 15 minutes without requests and takes about a minute to wake, so keep it
+    # awake with a free uptime monitor on /health every 5 minutes (README, "Render"). For judging day you can switch the
+    # service to "starter" (US$7/month, always on) in the Render dashboard: Settings > Instance Type.
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL

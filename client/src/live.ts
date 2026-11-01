@@ -5,6 +5,11 @@ import type { LiveEvent } from "./api";
 export type LiveStatus = "connecting" | "open" | "retrying";
 type Listener = (e: LiveEvent) => void;
 
+// Normally empty: the stream comes from this site like every other call. When the app is served by a proxy that
+// buffers streams (set VITE_LIVE_ORIGIN at build time, e.g. https://scammap.onrender.com), the stream alone connects
+// straight to the server, which allows that (access-control-allow-origin on /live/stream only).
+const LIVE_ORIGIN = ((import.meta.env.VITE_LIVE_ORIGIN as string | undefined) ?? "").trim().replace(/\/+$/, "");
+
 let source: EventSource | null = null;
 let status: LiveStatus = "connecting";
 const listeners = new Set<Listener>();
@@ -22,7 +27,7 @@ function setStatus(s: LiveStatus): void {
 
 function open(): void {
   if (source || typeof EventSource === "undefined") return;
-  source = new EventSource("/live/stream");
+  source = new EventSource(`${LIVE_ORIGIN}/live/stream`);
   setStatus("connecting");
   source.onopen = () => setStatus("open");
   source.onerror = () => setStatus("retrying"); // EventSource reconnects by itself

@@ -166,6 +166,13 @@ export function registerPlatformRoutes(app: FastifyInstance, deps: AppDeps): voi
     const pins = q.pincode && findArea(q.pincode) ? [q.pincode] : null;
     return { hours, series: await P.rollups.series(hours, deps.now(), pins), by_area: await P.rollups.byArea(hours, deps.now()), refreshed: P.rollups.lastRefresh };
   });
+  // Deployment check: the network the server sees this request coming from, last part hidden. Behind a proxy
+  // (Vercel, Render) it must be YOUR network, not the proxy's, or the same-network trust rule would merge everyone.
+  // Nothing is stored or logged.
+  app.get("/system/network", async (req) => {
+    const p = prefixOf(req.ip);
+    return { network: p ? (p.includes(":") ? `${p}:…` : `${p}.x`) : null, behind_proxy: Boolean(req.headers["x-forwarded-for"]) };
+  });
   app.get("/system/scale", async () => {
     const last = (await deps.service.db.query<{ at: Date; result: unknown }>("SELECT at, result FROM loadtest_runs ORDER BY id DESC LIMIT 1")).rows[0];
     const counts = (await deps.service.db.query<{ reports: number; idents: number; rollups: number }>(

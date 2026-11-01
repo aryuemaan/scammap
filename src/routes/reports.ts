@@ -40,7 +40,13 @@ export const ReportBody = z.object({
 });
 
 /** Coarse network prefix for app users (first 3 octets / first 3 IPv6 groups). Only its HMAC is stored. */
-export function prefixOf(ip: string): string | null {
+export function prefixOf(raw: string): string | null {
+  // Some proxies add the client's port: Azure App Service sends "49.36.12.7:51234", others "[2401:4900::1]:443".
+  let ip = raw.trim();
+  const v4port = /^(\d{1,3}(?:\.\d{1,3}){3}):\d{1,5}$/.exec(ip);
+  if (v4port) ip = v4port[1]!;
+  const bracketed = /^\[([0-9a-fA-F:.]+)\](?::\d{1,5})?$/.exec(ip);
+  if (bracketed) ip = bracketed[1]!;
   const v4 = /(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.\d{1,3}$/.exec(ip);
   if (v4) return `${v4[1]}.${v4[2]}.${v4[3]}`;
   if (ip.includes(":")) return ip.split(":").slice(0, 3).join(":").toLowerCase();

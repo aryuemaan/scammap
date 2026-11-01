@@ -30,7 +30,7 @@ Built by **Team Pi Naut Square** for the *Community Scam Map* brief.
 - [Configuration (.env)](#configuration-env)
 - [All commands](#all-commands)
 - [Tests and results](#tests-and-results)
-- [Deploy (HTTPS)](#deploy-https)
+- [Deploy (HTTPS)](#deploy-https): Supabase + Render (free), Azure, and the website on Vercel
 - [Project structure](#project-structure)
 - [Troubleshooting](#troubleshooting)
 - [Before you push to GitHub](#before-you-push-to-github)
@@ -222,7 +222,7 @@ npm run seed-demo -- --reset    # optional: ~1,000 synthetic reports for the map
 ```bash
 npm run dev            # terminal 1: server with auto-reload on :8080
 npm run dev:client     # terminal 2: app with hot reload on http://localhost:5173 (API proxied to :8080)
-npm run check-all      # typecheck + 117 tests + build, before every commit
+npm run check-all      # typecheck + 120 tests + build, before every commit
 ```
 
 **Quick look without a licence (local only):** set `LICENSE_ENFORCE=false` in `.env`. Never deploy with it.
@@ -835,7 +835,8 @@ the scripts (real environment variables win). Restart after editing it.
 | Variable | Meaning |
 |---|---|
 | `DATABASE_URL` | Postgres connection string |
-| `DB_SSL` | `true` for hosted Postgres that needs TLS |
+| `DB_SSL` | TLS to the database. Always on for Supabase, Azure, Neon and Render external URLs (only `disable` turns it off there); `true` for other hosted Postgres |
+| `DB_LOCKDOWN` | default on: at every start, row level security on the server's own tables and no grants for Supabase's `anon`/`authenticated` roles, so Supabase's automatic HTTP API can't read them. `false` to skip |
 | `PORT` | listen port (Render sets it) |
 | `PEPPER` | secret for HMAC of reporter ids, networks and note fingerprints; **required** in production |
 | `LICENSE_ENFORCE` | `true` (default). `false` disables the lock: local development only |
@@ -855,6 +856,7 @@ the scripts (real environment variables win). Restart after editing it.
 | `LOCAL_AI`, `OLLAMA_URL`, `OLLAMA_MODEL`, `OLLAMA_THREADS`, `OLLAMA_TIMEOUT_SECONDS`, `OLLAMA_ALLOW_REMOTE`, `AUTO_SCAM_TYPE` | local AI note reader (default `llama3.2:3b` at `http://127.0.0.1:11434`) |
 | `SUBNET_CLUSTERING`, `SUBNET_WINDOW_MINUTES` | anti-spoofing rule B2 (on, 5 minutes) |
 | `URLHAUS_AUTH_KEY`, `THREAT_FEED`, `THREAT_FEED_LIMIT`, `THREAT_FEED_MINUTES`, `THREAT_FEED_DNS` | map layer B: free abuse.ch key, on/off, URLs per fetch (200), minutes between fetches (5, minimum), place generic domains by DNS (true) |
+| `VITE_LIVE_ORIGIN` | build time, optional: the server's address when the website is served by a proxy such as Vercel; the Live stream then connects to the server directly |
 | `VITE_MAPTILER_KEY` | build time, optional: MapTiler key. The Live map then uses MapTiler Dark, and MapTiler Streets is added to the style menu. Falls back to the keyless CARTO style if the key fails |
 
 ---
@@ -864,7 +866,7 @@ the scripts (real environment variables win). Restart after editing it.
 | Command | What it does |
 |---|---|
 | `npm run check-all` | typecheck + all unit tests + build, in one go |
-| `npm test` | 117 unit tests: normalisation, trust rules (incl. grudges), alert maths, licence and clock checks, dataset models, forecast, live feed, AI privacy, link-check SSRF guard and page analysis, partner matching, connectors, transparency chain, campaigns, clock guard, subnet clustering, Hindi/Hinglish note reading, threat-feed geography and defanging, US numbers and Amazon patterns, integration test sends, webhook signatures, Telegram `/chatid` |
+| `npm test` | 120 unit tests: normalisation, trust rules (incl. grudges), alert maths, licence and clock checks, dataset models, forecast, live feed, AI privacy, link-check SSRF guard and page analysis, partner matching, connectors, transparency chain, campaigns, clock guard, subnet clustering, Hindi/Hinglish note reading, threat-feed geography and defanging, US numbers and Amazon patterns, integration test sends, webhook signatures, Telegram `/chatid`, every route covered by the deploy proxy list, client networks behind proxies that add a port, database URL and TLS handling |
 | `npm run typecheck` | strict TypeScript for server, scripts, tests and app |
 | `npm run simulate -- [--base URL] [--seed N] [--licence] [--clean]` | randomised stand-in for the judges' test tool, prints a rubric-shaped scorecard (resets the database) |
 | `npm run bench-trust [runs]` | offline benchmark: how often each real and fake pattern gets the wrong verdict |
@@ -880,6 +882,10 @@ the scripts (real environment variables win). Restart after editing it.
 | `npm run threats` | check your URLhaus Auth-Key and preview map layer B (one request) |
 | `npm run integrations [-- test [name\|all] \| secret \| serve-advisory]` | check every connector's `.env` values (sends nothing), send `[TEST]` alerts, make a webhook secret, serve the sample advisory feed |
 | `npm run webhook-receiver [-- --port 9900] [--fail]` | a stand-in bank endpoint that verifies the webhook signature and prints events |
+| `PW=<password> npm run supabase:host -- <project-ref>` | find which Supabase session-pooler host serves your project (prints just the host) |
+| `npm run db:copy -- --from URL --to URL [--datasets-only] [--replace]` | copy ScamMap's data between databases (for example laptop → Supabase); counts are checked at the end |
+| `npm run db:check [-- --url URL]` | check the database in `DATABASE_URL`: reachable, TLS, round-trip time, tables, datasets, closed to Supabase's HTTP API (changes nothing) |
+| `npm run vercel-config -- https://<server>` | write `vercel.json` so the website runs on Vercel and forwards every API path to your server |
 | `npm run gen-keys` | create the licence key pair (`--force` to replace) |
 | `npm run sign-licence -- --licensee NAME (--minutes N \| --days N \| --seconds N \| --expires ISO) [--out FILE] [--upload URL]` | sign a licence on your laptop |
 
@@ -888,7 +894,7 @@ the scripts (real environment variables win). Restart after editing it.
 ## Tests and results
 
 ```bash
-npm run check-all                     # typecheck + 117 unit tests + build
+npm run check-all                     # typecheck + 120 unit tests + build
 npm run simulate -- --licence         # our stand-in for the judges' test tool (resets the database!)
 npm run load-test -- --seconds 15 --concurrency 50
 npm run bench-trust                   # offline: how often each real and fake pattern gets the wrong verdict
@@ -923,19 +929,258 @@ Run the simulator against a deployed server with `npm run simulate -- --base htt
 
 ## Deploy (HTTPS)
 
-**Render (Singapore), with the included Blueprint:**
+### The free way: Supabase (database) + Render (website and API)
+
+One Render web service serves the whole website and the API from one address; Supabase holds the data. Both free
+plans need no payment. Total: about 20 minutes.
+
+```
+browser / phone  ──►  Render web service (Singapore, Docker)  ──►  Supabase Postgres (Singapore)
+                      website + API + live feed + clock guard        reports, licence, datasets
+```
+
+**1. Supabase project** (https://supabase.com → sign in with GitHub)
+- **New project**: name `scammap`, a database password (use **Generate a password** and save it), region
+  **Southeast Asia (Singapore)** (same region as Render keeps each query to a few milliseconds; if you host the server
+  on Azure Central India instead, pick **South Asia (Mumbai)**).
+- If the form offers it, untick the automatic **Data API** exposure: ScamMap never uses it. (The server also locks its
+  tables against it by itself: `DB_LOCKDOWN`, on by default.)
+- When the project is ready: **Connect** (top bar) → **Session pooler** → copy the URI. It looks like
+  `postgres://postgres.<project-ref>:[YOUR-PASSWORD]@aws-<n>-<region>.pooler.supabase.com:5432/postgres`. Copy
+  the host exactly as shown (`aws-0` or `aws-1`, and your region): it differs between projects.
+  Put your password in place of `[YOUR-PASSWORD]` (URL-encode `@ : / # %` if it has them).
+  Use the **Session** pooler: the *Direct* address is IPv6-only on the free plan (Render can't reach it) and the
+  *Transaction* pooler (port 6543) drops the session locks ScamMap uses.
+
+**2. Check it from your laptop** (Git Bash, in the project folder):
+```bash
+npm run db:check -- --url "postgres://postgres.<ref>:<password>@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+```
+It should say *connected* and *no tables yet*.
+
+**3. Fill it.** Stop your local server first, then pick one:
+```bash
+LOCAL="postgres://postgres:<local-password>@localhost:5432/scammap"
+SB="<session pooler URI>"
+
+# A) Everything from your laptop: reports, licence, partners, datasets and models (no pg_dump needed)
+npm run db:copy -- --from "$LOCAL" --to "$SB"
+
+# B) Clean start for judging: only the datasets and their models, no reports
+npm run db:copy -- --from "$LOCAL" --to "$SB" --datasets-only
+
+# C) Or build the datasets again from the CSV files instead of copying
+DATABASE_URL="$SB" npm run import-data
+```
+`db:copy` creates ScamMap's tables in the target, copies every table in batches (the 284,807 card rows take a few
+minutes over home internet), moves the id counters on and checks that the row counts match. If the target already
+has rows (an earlier try), add `--replace`. Your local database is only read.
+Run `npm run db:check -- --url "<session pooler URI>"` again: tables, datasets and *closed to Supabase's public HTTP
+API* (after the server's first start).
+
+**4. Render** (https://dashboard.render.com → sign in with GitHub)
+- Push your code to GitHub first.
+- **New → Blueprint** → pick the repo → it reads `render.yaml` (free web service in Singapore, no database).
+- When it asks for **DATABASE_URL**, paste the session pooler URI. Leave **LICENSE_JSON** empty. **Apply**.
+- The first build takes 5-10 minutes. The log ends with `scammap listening`.
+
+**5. Unlock and check**
+```bash
+npm run sign-licence -- --licensee "Pi Naut Square" --days 30 --upload https://<your-service>.onrender.com
+curl https://<your-service>.onrender.com/health           # {"ok":true}
+curl https://<your-service>.onrender.com/license          # "status":"VALID"
+curl https://<your-service>.onrender.com/system/network   # your network, not Render's
+```
+Open `https://<your-service>.onrender.com` on your phone: that's the website. Add it to the home screen.
+
+**6. Keep it awake:** https://uptimerobot.com → *New monitor* → HTTP(s) → `https://<your-service>.onrender.com/health`
+→ every 5 minutes. A free Render service otherwise sleeps after 15 minutes idle, and the first request after that
+takes about a minute. The running server also keeps the Supabase project active (a free Supabase project pauses
+after a week with no activity).
+
+Every `git push` redeploys. Optional: a nicer address on Vercel in front: `npm run vercel-config -- https://<your-service>.onrender.com`
+([Website on Vercel](#website-on-vercel-server-stays-on-render)).
+
+| Problem | Fix |
+|---|---|
+| Render asks for a card | `render.yaml` must say `plan: free` (it does); Render may still ask once to verify a new account |
+| log: `getaddrinfo ENOTFOUND db.<ref>.supabase.co` | that's the Direct (IPv6) address: use the **Session pooler** URI |
+| `tenant/user postgres.<ref> not found` (or `Tenant or user not found`) | the pooler host doesn't match your project's region/cluster (`aws-0-…` vs `aws-1-…`, `ap-south-1` vs `ap-southeast-1`), or the user isn't `postgres.<project-ref>`: copy the whole URI from **Connect → Session pooler** and only replace the password |
+| log: `password authentication failed` | wrong password, or it has `@ : / # %` that need URL-encoding; reset it in Supabase → Settings → Database |
+| every call answers 403 | no licence yet: step 5 |
+| site is slow to answer the first time | the free service was asleep: step 6 |
+
+### Azure: App Service + PostgreSQL, deployed from GitHub
+
+The server runs on **Azure App Service** (Linux, Node 22) and the data on **Azure Database for PostgreSQL flexible
+server**. A GitHub Actions workflow in this repo (`.github/workflows/azure-app-service.yml`) builds, tests and deploys
+on every push to `main`.
+
+**Cost:** with *Azure for Students* ($100 credit, no card) the database's Burstable **B1ms** size is in the 12-month
+free amounts (750 hours a month). The App Service **Basic B1** plan (about US$13 a month) comes out of the credit; the
+Free F1 plan is limited to 60 CPU minutes a day and can't stay always on, so it won't run ScamMap. Delete the resource
+group after the event to stop all charges (stopping the app alone does not stop the plan's charge).
+
+**0. Find your allowed region.** Student subscriptions may deploy only to a few regions. Portal → **Policy** →
+**Assignments** → *Allowed resource deployment regions* → **Parameters**. Pick **Central India** if listed, otherwise
+the closest one listed, and use the same region for everything below.
+
+**1. Database.** Portal → **Create a resource** → *Azure Database for PostgreSQL flexible server* → **Create**:
+- (Or skip this step and use Supabase: set `DATABASE_URL` in step 3 to the Supabase session pooler URI, region South
+  Asia (Mumbai).)
+- Resource group: new, `scammap-rg`. Server name: `scammap-db-<yourname>`. Region: as above. Version: 16.
+- Workload type: **Development**, then **Configure server**: Burstable, **Standard_B1ms**, 32 GiB storage, high
+  availability off.
+- Authentication: PostgreSQL only. Admin: `scammapadmin` and a strong password (letters and digits are easiest: other
+  characters must be URL-encoded in `DATABASE_URL`).
+- Networking: **Public access**. Tick **Allow public access from any Azure service within Azure to this server**, and
+  **Add current client IP address** (so your laptop can import the datasets).
+- **Review + create** (5-10 minutes). Then the server → **Databases** → **Add** → `scammap`.
+
+**2. Web App.** Portal → **Create a resource** → **Web App**:
+- Resource group `scammap-rg`, name `scammap-<yourname>`, Publish **Code**, Runtime stack **Node 22 LTS**,
+  OS **Linux**, same region, pricing plan: new, **Basic B1**.
+- **Deployment** tab: continuous deployment **Disable** (this repo brings its own workflow), basic authentication
+  **Enable**.
+- **Review + create**, then open the app and copy its **Default domain**.
+
+**3. Settings.** In the Web App:
+- **Settings → Environment variables → App settings**, add, then **Apply**:
+
+  | Name | Value |
+  |---|---|
+  | `DATABASE_URL` | `postgres://scammapadmin:<password>@scammap-db-<yourname>.postgres.database.azure.com:5432/scammap` |
+  | `DB_SSL` | `true` |
+  | `PEPPER` | a long random string (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
+  | `LICENSE_ENFORCE` | `true` |
+  | `TRUST_BODY_IP_PREFIX` | `true` for judging (`false` for real use) |
+  | `NODE_ENV` | `production` |
+  | `SCM_DO_BUILD_DURING_DEPLOYMENT` | `false` (the workflow uploads a finished build) |
+  | optional | `GEMINI_API_KEY`, `URLHAUS_AUTH_KEY`, `LICENSE_JSON`, the [integration values](#integrations-setup) |
+
+- **Settings → Configuration → General settings**: Startup Command `node dist/server/src/server.js`, **Always on: On**,
+  **HTTPS Only: On**, **SCM Basic Auth Publishing Credentials: On**. **Save**.
+- Optional: **Monitoring → Health check** → on, path `/health`.
+
+**4. Connect GitHub.**
+- Web App **Overview** → **Download publish profile**.
+- GitHub repo → **Settings → Secrets and variables → Actions**:
+  - **Secrets** tab → *New repository secret* `AZURE_WEBAPP_PUBLISH_PROFILE` = the whole file's contents.
+  - **Variables** tab → *New repository variable* `AZURE_WEBAPP_NAME` = `scammap-<yourname>`.
+- **Actions** tab → *Deploy to Azure App Service* → **Run workflow** (or push to `main`). About 5-8 minutes; the last
+  step waits for `/health` and prints the live address. If your branch is called `master`, change `branches: [main]`
+  in the workflow.
+
+**5. Unlock and check** (from your laptop, with your Default domain):
+```bash
+npm run sign-licence -- --licensee "Pi Naut Square" --days 30 --upload https://<default-domain>
+curl https://<default-domain>/health            # {"ok":true}
+curl https://<default-domain>/license           # "status":"VALID"
+curl https://<default-domain>/system/network    # YOUR network's first three parts (not Azure's)
+# optional, the datasets (uses the client IP rule from step 1):
+DATABASE_URL="postgres://scammapadmin:<password>@scammap-db-<yourname>.postgres.database.azure.com:5432/scammap" DB_SSL=true npm run import-data
+```
+
+| Problem | Fix |
+|---|---|
+| `RequestDisallowedByAzure` while creating | that region isn't allowed for your subscription: step 0 |
+| the workflow shows *skipped* | `AZURE_WEBAPP_NAME` is missing, or was added under Secrets instead of Variables |
+| deploy step fails with 401 | basic auth publishing is off, or the publish profile is old: turn it on and download it again |
+| site shows *Application Error* | Web App → **Monitoring → Log stream**. Usually `DATABASE_URL`, a missing `DB_SSL=true`, or the "Allow Azure services" box in the database networking |
+| every API call answers 403 | no licence yet: the `sign-licence ... --upload` line in step 5 |
+
+<details>
+<summary>The same set-up with the Azure CLI</summary>
+
+```bash
+az login
+RG=scammap-rg; LOC=centralindia; DB=scammap-db-<yourname>; APP=scammap-<yourname>; PW='<strong-password>'
+az group create -n $RG -l $LOC
+az postgres flexible-server create -g $RG -n $DB -l $LOC --tier Burstable --sku-name Standard_B1ms \
+  --storage-size 32 --version 16 --admin-user scammapadmin --admin-password "$PW" \
+  --public-access 0.0.0.0 --database-name scammap            # 0.0.0.0 = allow Azure services
+az postgres flexible-server firewall-rule create -g $RG --name $DB --rule-name laptop \
+  --start-ip-address <your-ip> --end-ip-address <your-ip>
+az appservice plan create -g $RG -n scammap-plan -l $LOC --is-linux --sku B1
+az webapp create -g $RG -p scammap-plan -n $APP --runtime "NODE:22-lts"
+az webapp config set -g $RG -n $APP --startup-file "node dist/server/src/server.js" --always-on true
+az webapp update -g $RG -n $APP --https-only true
+az webapp config appsettings set -g $RG -n $APP --settings \
+  DATABASE_URL="postgres://scammapadmin:$PW@$DB.postgres.database.azure.com:5432/scammap" DB_SSL=true \
+  PEPPER="$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")" LICENSE_ENFORCE=true \
+  TRUST_BODY_IP_PREFIX=true NODE_ENV=production SCM_DO_BUILD_DURING_DEPLOYMENT=false
+az resource update -g $RG --name scm --namespace Microsoft.Web --resource-type basicPublishingCredentialsPolicies \
+  --parent sites/$APP --set properties.allow=true
+az webapp deployment list-publishing-profiles -g $RG -n $APP --xml > profile.xml
+gh secret set AZURE_WEBAPP_PUBLISH_PROFILE < profile.xml && rm profile.xml
+gh variable set AZURE_WEBAPP_NAME --body $APP
+gh workflow run "Deploy to Azure App Service"
+```
+</details>
+
+The website can also go on Vercel in front of Azure: `npm run vercel-config -- https://<default-domain>`
+([Website on Vercel](#website-on-vercel-server-stays-on-render)).
+
+### Render (Singapore), free, with the included Blueprint
+
+`render.yaml` creates a **free** web service in Singapore that uses Supabase for data (above). To use Render's own
+free Postgres instead (it expires after 30 days), set **Blueprint Path** to `render.render-postgres.yaml` when you
+create the Blueprint. Both are free, so no payment is needed (a Blueprint without `plan: free` defaults to the paid
+Starter instance and asks for a card).
 
 1. Push the repo to GitHub (check [Before you push](#before-you-push-to-github) first).
-2. Render → **New → Blueprint** → pick the repo. `render.yaml` creates the web service (Docker, Singapore, health check
-   `/health`) and a Postgres database in the same region. `PEPPER` is generated for you.
-3. Set `LICENSE_JSON` to the one-line contents of a long licence (so a fresh deploy is never locked out), and optionally
-   `GEMINI_API_KEY`, `URLHAUS_AUTH_KEY` and the integration values.
-4. Open `https://<your-service>.onrender.com/license`: it should say `"status":"VALID"`.
+2. https://dashboard.render.com → **New → Blueprint** → connect GitHub → pick the repo → **Apply**. It builds the
+   Docker image (5-10 minutes); `PEPPER` is generated for you. Leave `LICENSE_JSON` empty for now.
+3. Unlock it from your laptop: `npm run sign-licence -- --licensee "Pi Naut Square" --days 30 --upload https://<your-service>.onrender.com`
+4. Check `https://<your-service>.onrender.com/license` says `"status":"VALID"`, and `/system/network` shows your network.
+5. **Keep it awake:** a free service sleeps after 15 minutes without requests, and the first request after that takes
+   about a minute, which fails the half-second lookup test. Add a free monitor at https://uptimerobot.com: *New monitor*
+   → HTTP(s) → URL `https://<your-service>.onrender.com/health` → interval 5 minutes. One always-awake service fits in
+   Render's 750 free hours a month.
 
-Don't use a sleeping free instance for judging: a cold start takes about a minute and fails the half-second lookup
-test. Use `plan: starter` (as in `render.yaml`) or keep an uptime monitor on `/health`. Any host works (Railway, Fly.io,
-a VM): one Docker image plus `DATABASE_URL`. For Supabase or Neon set `DB_SSL=true`. In a real deployment also set
+What the free tier means for ScamMap:
+
+| Limit | Effect |
+|---|---|
+| Free Postgres expires **30 days** after creation (14 days' grace to upgrade, then deleted) | fine for the event; export or upgrade before then if you keep it |
+| 512 MB RAM, 0.1 CPU | enough for judging traffic (the server uses about 150 MB); slower builds and load tests |
+| Render may restart a free service at any time | data is in Postgres; the licence and clock mark survive restarts |
+| Outgoing SMTP ports are blocked | the `alerts-by-email` connector can't send; Telegram, Slack and webhooks work |
+| Render may still ask for a card to verify a new account | that is their anti-abuse check; without a card, use [Azure](#azure-app-service--postgresql-deployed-from-github) (student credit, no card) |
+
+To make it always on for judging day: the service → **Settings → Instance Type → Starter** (US$7/month); the database →
+upgrade before day 30 if you need the data longer. Any other host works too (Railway, Fly.io, a VM): one Docker image
+plus `DATABASE_URL`. For Supabase or Neon set `DB_SSL=true`. In a real deployment also set
 `TRUST_BODY_IP_PREFIX=false` and protect `/admin/reset`.
+
+### Website on Vercel (server stays on Render)
+
+Vercel hosts the **website** from its CDN and forwards every API path to your server, so the whole app works on one
+address (`https://<project>.vercel.app`). The server itself does not run on Vercel: it keeps state in memory and runs
+background work (the clock guard tick, the live stream, the threat feed, the Telegram bot), which serverless functions
+don't keep running. Deploy the server first (Render, above), then:
+
+1. Write the Vercel config with your server's address, commit and push:
+   ```bash
+   npm run vercel-config -- https://<your-service>.onrender.com
+   git add vercel.json && git commit -m "Vercel config" && git push
+   ```
+2. https://vercel.com/new → **Import** your GitHub repo. Keep **Framework Preset: Other**; `vercel.json` already sets
+   the install command (`npm ci`), the build (`npm run build:client`) and the output (`dist/public`).
+3. **Environment Variables** (build time, baked into the page, so never put secrets here):
+   `VITE_LIVE_ORIGIN=https://<your-service>.onrender.com` (the Live screen connects to the server directly, so a proxy
+   can't buffer the stream), and optionally `VITE_MAPTILER_KEY`, `VITE_TILE_URL`.
+4. **Deploy**. Then check:
+   ```bash
+   curl https://<project>.vercel.app/health            # {"ok":true}  (answered by your server through Vercel)
+   curl https://<project>.vercel.app/license           # "status":"VALID"
+   curl https://<project>.vercel.app/system/network    # your own network's first three parts, not Vercel's
+   ```
+   Open the site, check `+91 98823 19275` (after seeding) and open **Live**: the green "Live" dot means the stream is on.
+
+Every push to GitHub redeploys the website; the server redeploys on Render. Server secrets (`DATABASE_URL`, `PEPPER`,
+`GEMINI_API_KEY`, licence) stay on Render only. Run load tests and the simulator against the Render address (Vercel's
+firewall may slow a burst of thousands of requests); give judges whichever address passes `npm run simulate`.
 
 ---
 
@@ -970,11 +1215,13 @@ scammap/
 │   └── external/        outside lists: demo block-list, Reddit Amazon numbers, sample advisory feed
 ├── scripts/             simulate, seed-demo, live-demo, demo, import-data, bench-trust, load-test, gen-keys,
 │                        sign-licence, partner, translate, clock, threats, integrations, webhook-receiver
-├── test/                Vitest unit tests (117)
+├── test/                Vitest unit tests (120)
 ├── docs/screenshots/    images used in this README
 ├── DEMO.md              step-by-step demo runbook
 ├── PITCH.md             pitch notes and likely judge questions
-├── Dockerfile, docker-compose.yml, render.yaml
+├── .github/workflows/   azure-app-service.yml: build, test and deploy to Azure on every push to main
+├── Dockerfile, docker-compose.yml, vercel.json
+├── render.yaml          Render Blueprint (free web service + Supabase); render.render-postgres.yaml with Render's Postgres
 └── .env.example         every setting, explained
 ```
 

@@ -31,6 +31,10 @@
     "threats": "tsx scripts/threats.ts",
     "integrations": "tsx scripts/integrations.ts",
     "webhook-receiver": "tsx scripts/webhook-receiver.ts",
+    "vercel-config": "tsx scripts/vercel-config.ts",
+    "db:check": "tsx scripts/db-check.ts",
+    "db:copy": "tsx scripts/db-copy.ts",
+    "supabase:host": "tsx scripts/supabase-host.ts",
     "check-all": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {

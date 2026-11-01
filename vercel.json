@@ -1,0 +1,687 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build:client",
+  "outputDirectory": "dist/public",
+  "rewrites": [
+    {
+      "source": "/reports",
+      "destination": "https://your-server.onrender.com/reports"
+    },
+    {
+      "source": "/reports/:path*",
+      "destination": "https://your-server.onrender.com/reports/:path*"
+    },
+    {
+      "source": "/lookup",
+      "destination": "https://your-server.onrender.com/lookup"
+    },
+    {
+      "source": "/lookup/:path*",
+      "destination": "https://your-server.onrender.com/lookup/:path*"
+    },
+    {
+      "source": "/map",
+      "destination": "https://your-server.onrender.com/map"
+    },
+    {
+      "source": "/map/:path*",
+      "destination": "https://your-server.onrender.com/map/:path*"
+    },
+    {
+      "source": "/alerts",
+      "destination": "https://your-server.onrender.com/alerts"
+    },
+    {
+      "source": "/alerts/:path*",
+      "destination": "https://your-server.onrender.com/alerts/:path*"
+    },
+    {
+      "source": "/admin",
+      "destination": "https://your-server.onrender.com/admin"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://your-server.onrender.com/admin/:path*"
+    },
+    {
+      "source": "/challenges",
+      "destination": "https://your-server.onrender.com/challenges"
+    },
+    {
+      "source": "/challenges/:path*",
+      "destination": "https://your-server.onrender.com/challenges/:path*"
+    },
+    {
+      "source": "/license",
+      "destination": "https://your-server.onrender.com/license"
+    },
+    {
+      "source": "/license/:path*",
+      "destination": "https://your-server.onrender.com/license/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://your-server.onrender.com/health"
+    },
+    {
+      "source": "/health/:path*",
+      "destination": "https://your-server.onrender.com/health/:path*"
+    },
+    {
+      "source": "/analyze",
+      "destination": "https://your-server.onrender.com/analyze"
+    },
+    {
+      "source": "/analyze/:path*",
+      "destination": "https://your-server.onrender.com/analyze/:path*"
+    },
+    {
+      "source": "/stats",
+      "destination": "https://your-server.onrender.com/stats"
+    },
+    {
+      "source": "/stats/:path*",
+      "destination": "https://your-server.onrender.com/stats/:path*"
+    },
+    {
+      "source": "/insights",
+      "destination": "https://your-server.onrender.com/insights"
+    },
+    {
+      "source": "/insights/:path*",
+      "destination": "https://your-server.onrender.com/insights/:path*"
+    },
+    {
+      "source": "/datasets",
+      "destination": "https://your-server.onrender.com/datasets"
+    },
+    {
+      "source": "/datasets/:path*",
+      "destination": "https://your-server.onrender.com/datasets/:path*"
+    },
+    {
+      "source": "/live",
+      "destination": "https://your-server.onrender.com/live"
+    },
+    {
+      "source": "/live/:path*",
+      "destination": "https://your-server.onrender.com/live/:path*"
+    },
+    {
+      "source": "/campaigns",
+      "destination": "https://your-server.onrender.com/campaigns"
+    },
+    {
+      "source": "/campaigns/:path*",
+      "destination": "https://your-server.onrender.com/campaigns/:path*"
+    },
+    {
+      "source": "/network",
+      "destination": "https://your-server.onrender.com/network"
+    },
+    {
+      "source": "/network/:path*",
+      "destination": "https://your-server.onrender.com/network/:path*"
+    },
+    {
+      "source": "/push",
+      "destination": "https://your-server.onrender.com/push"
+    },
+    {
+      "source": "/push/:path*",
+      "destination": "https://your-server.onrender.com/push/:path*"
+    },
+    {
+      "source": "/partner",
+      "destination": "https://your-server.onrender.com/partner"
+    },
+    {
+      "source": "/partner/:path*",
+      "destination": "https://your-server.onrender.com/partner/:path*"
+    },
+    {
+      "source": "/rollups",
+      "destination": "https://your-server.onrender.com/rollups"
+    },
+    {
+      "source": "/rollups/:path*",
+      "destination": "https://your-server.onrender.com/rollups/:path*"
+    },
+    {
+      "source": "/system",
+      "destination": "https://your-server.onrender.com/system"
+    },
+    {
+      "source": "/system/:path*",
+      "destination": "https://your-server.onrender.com/system/:path*"
+    },
+    {
+      "source": "/connectors",
+      "destination": "https://your-server.onrender.com/connectors"
+    },
+    {
+      "source": "/connectors/:path*",
+      "destination": "https://your-server.onrender.com/connectors/:path*"
+    },
+    {
+      "source": "/transparency",
+      "destination": "https://your-server.onrender.com/transparency"
+    },
+    {
+      "source": "/transparency/:path*",
+      "destination": "https://your-server.onrender.com/transparency/:path*"
+    },
+    {
+      "source": "/privacy",
+      "destination": "https://your-server.onrender.com/privacy"
+    },
+    {
+      "source": "/privacy/:path*",
+      "destination": "https://your-server.onrender.com/privacy/:path*"
+    },
+    {
+      "source": "/ocr",
+      "destination": "https://your-server.onrender.com/ocr"
+    },
+    {
+      "source": "/ocr/:path*",
+      "destination": "https://your-server.onrender.com/ocr/:path*"
+    },
+    {
+      "source": "/safety",
+      "destination": "https://your-server.onrender.com/safety"
+    },
+    {
+      "source": "/safety/:path*",
+      "destination": "https://your-server.onrender.com/safety/:path*"
+    },
+    {
+      "source": "/demo",
+      "destination": "https://your-server.onrender.com/demo"
+    },
+    {
+      "source": "/demo/:path*",
+      "destination": "https://your-server.onrender.com/demo/:path*"
+    },
+    {
+      "source": "/threats",
+      "destination": "https://your-server.onrender.com/threats"
+    },
+    {
+      "source": "/threats/:path*",
+      "destination": "https://your-server.onrender.com/threats/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/reports",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/reports/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/lookup",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/lookup/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/map",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/map/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/alerts",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/alerts/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/admin",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/admin/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/challenges",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/challenges/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/license",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/license/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/health",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/health/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/analyze",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/analyze/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/stats",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/stats/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/insights",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/insights/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/datasets",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/datasets/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/live",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/live/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/campaigns",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/campaigns/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/network",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/network/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/push",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/push/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/partner",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/partner/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/rollups",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/rollups/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/system",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/system/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/connectors",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/connectors/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/transparency",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/transparency/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/privacy",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/privacy/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/safety",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/safety/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/demo",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/demo/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/threats",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/threats/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
+      "source": "/assets/:path*",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}

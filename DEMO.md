@@ -11,7 +11,7 @@ judging.
 
 ```bash
 # T1: a clean build, then the server
-npm run check-all                 # typecheck + 117 tests + build: must end with "built in …"
+npm run check-all                 # typecheck + 118 tests + build: must end with "built in …"
 npm start
 # T2
 npm run sign-licence -- --licensee "Demo Bank" --days 30 --upload http://localhost:8080
