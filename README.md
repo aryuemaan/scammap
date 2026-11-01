@@ -952,6 +952,8 @@ browser / phone  ──►  Render web service (Singapore, Docker)  ──►  S
   Use the **Session** pooler: the *Direct* address is IPv6-only on the free plan (Render can't reach it) and the
   *Transaction* pooler (port 6543) drops the session locks ScamMap uses.
 
+To run your laptop against Supabase too, start from `.env.supabase.example` (`cp .env.supabase.example .env`).
+
 **2. Check it from your laptop** (Git Bash, in the project folder):
 ```bash
 npm run db:check -- --url "postgres://postgres.<ref>:<password>@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
@@ -1222,7 +1224,8 @@ scammap/
 ├── .github/workflows/   azure-app-service.yml: build, test and deploy to Azure on every push to main
 ├── Dockerfile, docker-compose.yml, vercel.json
 ├── render.yaml          Render Blueprint (free web service + Supabase); render.render-postgres.yaml with Render's Postgres
-└── .env.example         every setting, explained
+├── .env.example         every setting, explained
+└── .env.supabase.example  the same, for running against Supabase
 ```
 
 ---

@@ -1,4 +1,5 @@
 // All configuration comes from environment variables, read once at startup.
+import { wantsTls } from "./lib/dburl.js";
 export interface Env {
   databaseUrl: string;
   dbSsl: boolean;
@@ -50,7 +51,8 @@ export function readEnv(e: NodeJS.ProcessEnv = process.env): Env {
   const databaseUrl = e.DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/scammap";
   return {
     databaseUrl,
-    dbSsl: bool(e.DB_SSL, /sslmode=require/.test(databaseUrl)),
+    // Hosted databases (Supabase, Azure, Neon, Render's external URL) always use TLS; elsewhere DB_SSL decides.
+    dbSsl: wantsTls(databaseUrl, e.DB_SSL),
     port: Number(e.PORT ?? 8080),
     pepper: pepper || "local-dev-pepper-not-for-production",
     licenceEnforce: bool(e.LICENSE_ENFORCE, true),

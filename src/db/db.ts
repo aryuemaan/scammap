@@ -1,7 +1,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import pg from "pg";
-import { logInfo } from "../log.js";
+import { poolConfig } from "../lib/dburl.js";
+import { logInfo, logWarn } from "../log.js";
 import type { Licence } from "../licence/licence.js";
 import type { LicenceStore } from "../licence/manager.js";
 
@@ -10,10 +11,11 @@ export type Client = pg.PoolClient;
 
 export function createPool(url: string, ssl: boolean): Pool {
   const pool = new pg.Pool({
-    connectionString: url,
-    ssl: ssl ? { rejectUnauthorized: false } : undefined,
+    ...poolConfig(url, ssl),
     max: 10,
     idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 20_000,
+    keepAlive: true,
   });
   // A dropped idle connection must not crash the process.
   pool.on("error", () => undefined);
@@ -44,6 +46,44 @@ export async function migrate(pool: Pool, dir = path.resolve(process.cwd(), "src
     await client.query("SELECT pg_advisory_unlock(727274)").catch(() => undefined);
     client.release();
   }
+  if (process.env.DB_LOCKDOWN !== "false") {
+    try {
+      const r = await lockDownPublicSchema(pool);
+      if (r.rls_enabled || r.revoked_from.length) logInfo("database locked down", { rls_enabled: r.rls_enabled, revoked_from: r.revoked_from.join(",") || "none" });
+    } catch (e) {
+      logWarn(`database lock-down skipped: ${e instanceof Error ? e.message.slice(0, 160) : String(e)}`);
+    }
+  }
+}
+
+
+const quoteIdent = (name: string): string => `"${name.replace(/"/g, '""')}"`;
+
+/**
+ * Supabase (and similar hosts) publish the public schema through an automatic HTTP API to their "anon" and
+ * "authenticated" roles. ScamMap never uses that API, so every table this server owns gets row level security with no
+ * policies (those roles see no rows) and those roles lose their grants on it. The server connects as the tables' owner,
+ * which row level security doesn't apply to, so nothing changes for ScamMap itself. Idempotent; runs after every
+ * migration check. On plain Postgres it only sets the RLS flag. Turn off with DB_LOCKDOWN=false.
+ */
+export async function lockDownPublicSchema(pool: Pool): Promise<{ rls_enabled: number; revoked_from: string[] }> {
+  const owned = (await pool.query<{ name: string; kind: string; rls: boolean }>(
+    `SELECT c.relname AS name, c.relkind AS kind, c.relrowsecurity AS rls
+       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'S') AND pg_get_userbyid(c.relowner) = current_user`,
+  )).rows;
+  let enabled = 0;
+  for (const t of owned) {
+    if (t.kind === "S" || t.rls) continue;
+    await pool.query(`ALTER TABLE public.${quoteIdent(t.name)} ENABLE ROW LEVEL SECURITY`);
+    enabled++;
+  }
+  const roles = (await pool.query<{ rolname: string }>("SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated')")).rows.map((r) => r.rolname);
+  if (roles.length) {
+    const who = roles.map(quoteIdent).join(", ");
+    for (const t of owned) await pool.query(`REVOKE ALL ON ${t.kind === "S" ? "SEQUENCE" : "TABLE"} public.${quoteIdent(t.name)} FROM ${who}`);
+  }
+  return { rls_enabled: enabled, revoked_from: roles };
 }
 
 export function licenceStore(pool: Pool): LicenceStore {
